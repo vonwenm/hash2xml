@@ -4,11 +4,11 @@
 Nobody uses XML anymore, but sometimes you just have to.
 
 I was surprised to find out it is not possible to generate XML from a Go map using the encoding/xml
-package. It is however possible to marshal a map to JSON using encoding/json. Untill the encoding/xml
+package. It is however possible to marshal a map to JSON using encoding/json. Until the encoding/xml
 package decides to support marshalling of a map, I will be using this.
 
 Although there are other tools available, they have lots of dependencies and other functionalities
-that I just not need.
+that I just don't need. This is meant to be easily embeddable without any other dependencies. 
 
 As they say, necessity is the mother of invention.
 
