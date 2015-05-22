@@ -38,7 +38,7 @@ func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 		},
 	}
 
-	err := serializer.encode(rootName, hash)
+	err := serializer.Encode(rootName, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +46,9 @@ func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// encode is resposible for doing the actual work of writing
+// Encode is resposible for doing the actual work of writing
 // a hash as xml into a Writer
-func (s *Serializer) encode(rootName string, hash map[string]interface{}) error {
+func (s *Serializer) Encode(rootName string, hash map[string]interface{}) error {
 	s.WriteString(header)
 	s.encodeHash(hash, rootName)
 	err := s.Flush()
@@ -128,7 +128,7 @@ func (s *Serializer) recurse(raw interface{}, key ...string) {
 	case []interface{}:
 		s.encodeArray(v, key...)
 
-		// scalar
+	// scalar
 	case string, float64, bool, int, int32, int64, float32, time.Time:
 		s.encodeScalar(v, key...)
 

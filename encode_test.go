@@ -28,7 +28,6 @@ type testTypes struct {
 
 func TestDeserialize(t *testing.T) {
 	hash := make(map[string]interface{})
-
 	hash["key1"] = 1
 	hash["key2"] = "2"
 	hash["key3"] = []interface{}{"Array value 1", "Array value 2"}
@@ -48,6 +47,7 @@ func TestDeserialize(t *testing.T) {
 	log.Printf("Key2: %#v", temp.Key2)
 	log.Printf("Key3: %#v", temp.Key3)
 	log.Printf("Key4: %#v", temp.Key4)
+	log.Printf(string(bytes))
 }
 
 func TestLargeMap(t *testing.T) {
