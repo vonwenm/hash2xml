@@ -10,7 +10,7 @@ package decides to support marshalling of a map, I will be using this.
 Although there are other tools available, they have lots of dependencies and other functionalities
 that I just not need.
 
-As they say, necessity is the month of invention.
+As they say, necessity is the mother of invention.
 
 
 #### Example
