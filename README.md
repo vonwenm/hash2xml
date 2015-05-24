@@ -48,49 +48,51 @@ prints out
 
 #### Addvanced Usage
 ```go
-// custom type
-type myType struct {
-	MyInt    int    `xml:"key1"`
-	MyString string `xml:"key2"`
-}
-
-// hash containing mixed types
+// hash containing user defined types
 hash := map[string]interface{}{
   "key1": "value of type string",
-  "key2": myType{42, "Hallo world"},
+  "key2": myType{MyInt: 42, MyString: "Hallo world"},
 }
 
+// create a new byte buffer and serializer
 var b bytes.Buffer
 serializer := hash2xml.NewSerializer(&b, " ", true)
 
-// add a converter for myType
+// add a custom converter for myType
 serializer.AddConverter(func(s *hash2xml.Serializer, raw interface{}, path string, key ...string) (bool, error) {
   switch v := raw.(type) {
   case myType:
-    out, _ := xml.MarshalIndent(v, s.GetIndentation(), " ")
+
+    // change the root element name of myType
+    wrapper := struct {
+      myType
+      XMLName xml.Name
+    }{v, xml.Name{Local: key[0]}}
+
+    // delegate to encoding/xml
+    out, err := xml.MarshalIndent(wrapper, s.GetIndentation(), " ")
+
+    // embed the xml in the rest of the document
     s.WriteString(string(out))
     s.Newline()
-    return true, nil
+    return true, err
   default:
     return false, nil
   }
 })
 
-// encode the hash with the new converter
 serializer.Encode("docroot", hash)
-
 
 log.Printf(string(b.Bytes()))
 ```
 prints out
 
 ```xml
-<docroot>
- <key1>value of type string</key1>
- <myType>
-  <key1>42</key1>
-  <key2>Hallo world</key2>
- </myType>
+<key1>value of type string</key1>
+ <key2>
+  <myint>42</myint>
+  <mystr>Hallo world</mystr>
+ </key2>
 </docroot>
 ```
 
