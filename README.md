@@ -16,10 +16,14 @@ As they say, necessity is the mother of invention.
 #### Basic Usage
 ```go
 hash := make(map[string]interface{})
-hash["key1"] = 1
-hash["key2"] = "2"
-hash["key3"] = []interface{}{"Array value 1", "Array value 2"}
-hash["key4"] = []interface{}{1, 2, 3, 4, 5, 6, 7}
+hash["key1"] = 123
+hash["key2"] = "hallo world"
+hash["key3"] = []interface{}{1, 2, 3}
+hash["key4"] = map[string]interface{}{
+  "name":    "John",
+  "surname": "Doe",
+  "number":  "555-FILK",
+}
 
 bytes, _ := hash2xml.ToXML("docroot", hash)
 log.Printf(string(bytes))
@@ -28,22 +32,20 @@ prints out
 
 ```xml
 <docroot>
- <key2>2</key2>
+ <key1>123</key1>
+ <key2>hallo world</key2>
  <key3>
-  <string>Array value 1</string>
-  <string>Array value 2</string>
- </key3>
- <key4>
   <int>1</int>
   <int>2</int>
   <int>3</int>
-  <int>4</int>
-  <int>5</int>
-  <int>6</int>
-  <int>7</int>
+ </key3>
+ <key4>
+  <name>John</name>
+  <surname>Doe</surname>
+  <number>555-FILK</number>
  </key4>
- <key1>1</key1>
 </docroot>
+
 ```
 
 #### Advanced Usage

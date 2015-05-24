@@ -33,6 +33,22 @@ type myType struct {
 	MyString string `xml:"mystr"`
 }
 
+// Example usage
+func TestBasicExample(t *testing.T) {
+	hash := make(map[string]interface{})
+	hash["key1"] = 123
+	hash["key2"] = "hallo world"
+	hash["key3"] = []interface{}{1, 2, 3}
+	hash["key4"] = map[string]interface{}{
+		"name":    "John",
+		"surname": "Doe",
+		"number":  "555-FILK",
+	}
+
+	bytes, _ := hash2xml.ToXML("docroot", hash)
+	log.Printf(string(bytes))
+}
+
 // Simple test for checking if the XML is well formed
 func TestDeserialize(t *testing.T) {
 	hash := make(map[string]interface{})
