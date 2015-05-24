@@ -111,7 +111,7 @@ func TestLargeMap(t *testing.T) {
 	log.Printf("\n%s", string(bytes))
 }
 
-func TestCustomConverter(t *testing.T) {
+func TestCustomEncoder(t *testing.T) {
 	// hash containing user defined types
 	hash := map[string]interface{}{
 		"key1": "value of type string",
@@ -122,8 +122,8 @@ func TestCustomConverter(t *testing.T) {
 	// create a new serializer with a reference to a byte buffer
 	serializer := hash2xml.NewSerializer(&b, " ", true)
 
-	// add a custom converter for myType
-	serializer.AddConverter(func(s *hash2xml.Serializer, raw interface{}, path string, key ...string) (bool, error) {
+	// add a custom encoder for myType
+	serializer.AddEncoder(func(s *hash2xml.Serializer, raw interface{}, path string, key ...string) (bool, error) {
 		switch v := raw.(type) {
 		case myType:
 
@@ -141,7 +141,7 @@ func TestCustomConverter(t *testing.T) {
 			s.Newline()
 			return true, err
 		default:
-			// return false to indicate that other converters must handle it
+			// return false to indicate that other encoders must handle it
 			return false, nil
 		}
 	})

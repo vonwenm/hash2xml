@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// hashConverter converts the items in a hash by iterating and encoding each entry
-func hashConverter(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
+// hashEncoder encodes the items in a hash by iterating and encoding each entry
+func hashEncoder(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
 	switch hash := raw.(type) {
 	case map[string]interface{}:
 		if len(key) > 0 {
@@ -34,8 +34,8 @@ func hashConverter(s *Serializer, raw interface{}, path string, key ...string) (
 	}
 }
 
-// arrayConverter converts the items in an array by iterating and encoding each entry
-func arrayConverter(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
+// arrayEncoder encodes the items in an array by iterating and encoding each entry
+func arrayEncoder(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
 	switch array := raw.(type) {
 	case []interface{}:
 		if len(key) > 0 {
@@ -64,8 +64,8 @@ func arrayConverter(s *Serializer, raw interface{}, path string, key ...string) 
 	}
 }
 
-// scalarConverter converts scalar values to string using %s formatting
-func scalarConverter(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
+// scalarEncoder encodes scalar values to string using %s formatting
+func scalarEncoder(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
 	switch value := raw.(type) {
 	case string, float64, bool, int, int32, int64, float32:
 		var defaultKey string
@@ -91,8 +91,8 @@ func scalarConverter(s *Serializer, raw interface{}, path string, key ...string)
 	}
 }
 
-// timeConverter converts time to a decent format
-func timeConverter(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
+// timeEncoder encodes time to a decent format
+func timeEncoder(s *Serializer, raw interface{}, path string, key ...string) (bool, error) {
 	switch value := raw.(type) {
 	case time.Time:
 		var defaultKey string
@@ -104,7 +104,7 @@ func timeConverter(s *Serializer, raw interface{}, path string, key ...string) (
 			s.WriteStartTag(defaultKey)
 		}
 
-		// convert and write the time
+		// encode and write the time
 		s.WriteScalar(value.Format(time.RFC3339))
 
 		if len(key) > 0 {

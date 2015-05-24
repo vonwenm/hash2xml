@@ -21,17 +21,17 @@ type Printer struct {
 	depth  int
 }
 
-// Converter is a function  in the xml conversion pipeline that converts an
+// Encoder is a function in the xml conversion pipeline that encodes an
 // object into xml  by writing it to the serializer
-type Converter func(*Serializer, interface{}, string, ...string) (bool, error)
+type Encoder func(*Serializer, interface{}, string, ...string) (bool, error)
 
-// Serializer is resposible for converting a hash to XML
+// Serializer is resposible for encoding a hash to XML
 type Serializer struct {
 	Printer
-	converters []Converter
+	encoders []Encoder
 }
 
-// ToXML is a factory/helper method that converts a map to an XML document
+// ToXML is a factory/helper method that encodes a map to an XML document
 func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 	var b bytes.Buffer
 
@@ -47,17 +47,17 @@ func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 // NewSerializer instantiates a serializer with all fields set
 func NewSerializer(b *bytes.Buffer, spacer string, pretty bool) Serializer {
 
-	// default converters
-	array := []Converter{
-		hashConverter,
-		arrayConverter,
-		scalarConverter,
-		timeConverter,
+	// default encoders
+	array := []Encoder{
+		hashEncoder,
+		arrayEncoder,
+		scalarEncoder,
+		timeEncoder,
 	}
 
 	// instantiate the Serializer
 	return Serializer{
-		converters: array,
+		encoders: array,
 		Printer: Printer{
 			Writer: bufio.NewWriter(b),
 			Spacer: spacer,
@@ -66,11 +66,11 @@ func NewSerializer(b *bytes.Buffer, spacer string, pretty bool) Serializer {
 	}
 }
 
-// AddConverter adds a new conversion function for the xml conversion pipeline
-// This method actually prepends the converter, so that it take preference
+// AddEncoder adds a new encoding function for the xml conversion pipeline
+// This method actually prepends the encoder, so that it take preference
 // over the default ones
-func (s *Serializer) AddConverter(c ...Converter) {
-	s.converters = append(c, s.converters...)
+func (s *Serializer) AddEncoder(e ...Encoder) {
+	s.encoders = append(e, s.encoders...)
 }
 
 // Encode is resposible for doing the actual work of writing
@@ -94,21 +94,21 @@ func (s *Serializer) Convert(raw interface{}, p string, key ...string) error {
 		path = fmt.Sprintf("%s/%s", p, key[0])
 	}
 
-	// look for a suitable converter
-	for _, c := range s.converters {
+	// look for a suitable encoder
+	for _, c := range s.encoders {
 		found, err := c(s, raw, path, key...)
 		if err != nil {
 			return err
 		}
-		// stop looking if a converter was found
+		// stop looking if a encoder was found
 		if found {
 			return nil
 		}
 	}
 
 	t := reflect.TypeOf(raw)
-	log.Printf("Please add your own hash2xml.Converter that accepts type %s", t)
-	return fmt.Errorf("Error: XML serializer did not find a converter for type: %v", t)
+	log.Printf("Please add your own hash2xml.Encoder that accepts type %s", t)
+	return fmt.Errorf("Error: XML serializer did not find a encoder for type: %v", t)
 }
 
 func (s *Serializer) getDefaultKey(value interface{}) string {

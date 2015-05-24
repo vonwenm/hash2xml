@@ -58,8 +58,8 @@ var b bytes.Buffer
 // create a new serializer with a reference to a byte buffer
 serializer := hash2xml.NewSerializer(&b, " ", true)
 
-// add a custom converter for myType
-serializer.AddConverter(func(s *hash2xml.Serializer, raw interface{}, path string, key ...string) (bool, error) {
+// add a custom encoder for myType
+serializer.AddEncoder(func(s *hash2xml.Serializer, raw interface{}, path string, key ...string) (bool, error) {
   switch v := raw.(type) {
   case myType:
 
@@ -77,7 +77,7 @@ serializer.AddConverter(func(s *hash2xml.Serializer, raw interface{}, path strin
     s.Newline()
     return true, nil
   default:
-    // return false to indicate that other converters must handle it
+    // return false to indicate that other encoders must handle it
     return false, nil
   }
 })
@@ -100,6 +100,6 @@ prints out
 ```
 
 #### TODO
-* More default converters
+* More default encoders
 * Attributes
 * Namespaces
