@@ -67,8 +67,10 @@ func NewSerializer(b *bytes.Buffer, spacer string, pretty bool) Serializer {
 }
 
 // AddConverter adds a new conversion function for the xml conversion pipeline
-func (s *Serializer) AddConverter(c Converter) {
-	s.converters = append(s.converters, c)
+// This method actually prepends the converter, so that it take preference
+// over the default ones
+func (s *Serializer) AddConverter(c ...Converter) {
+	s.converters = append(c, s.converters...)
 }
 
 // Encode is resposible for doing the actual work of writing
