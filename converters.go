@@ -104,7 +104,8 @@ func timeConverter(s *Serializer, raw interface{}, path string, key ...string) (
 			s.WriteStartTag(defaultKey)
 		}
 
-		s.WriteScalar(value)
+		// convert and write the time
+		s.WriteScalar(value.Format(time.RFC3339))
 
 		if len(key) > 0 {
 			s.WriteEndTag(key[0])
