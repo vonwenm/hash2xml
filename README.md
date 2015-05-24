@@ -46,7 +46,7 @@ prints out
 </docroot>
 ```
 
-#### Addvanced Usage
+#### Advanced Usage
 ```go
 // hash containing user defined types
 hash := map[string]interface{}{
@@ -54,8 +54,8 @@ hash := map[string]interface{}{
   "key2": myType{MyInt: 42, MyString: "Hallo world"},
 }
 
-// create a new byte buffer and serializer
 var b bytes.Buffer
+// create a new serializer with a reference to a byte buffer
 serializer := hash2xml.NewSerializer(&b, " ", true)
 
 // add a custom converter for myType
@@ -70,17 +70,19 @@ serializer.AddConverter(func(s *hash2xml.Serializer, raw interface{}, path strin
     }{v, xml.Name{Local: key[0]}}
 
     // delegate to encoding/xml
-    out, err := xml.MarshalIndent(wrapper, s.GetIndentation(), " ")
+    out, _ := xml.MarshalIndent(wrapper, s.GetIndentation(), " ")
 
     // embed the xml in the rest of the document
     s.WriteString(string(out))
     s.Newline()
-    return true, err
+    return true, nil
   default:
+    // return false to indicate that other converters must handle it
     return false, nil
   }
 })
 
+// after custom encoders are added, call Encode()
 serializer.Encode("docroot", hash)
 
 log.Printf(string(b.Bytes()))
@@ -88,15 +90,16 @@ log.Printf(string(b.Bytes()))
 prints out
 
 ```xml
-<key1>value of type string</key1>
+<docroot>
  <key2>
   <myint>42</myint>
   <mystr>Hallo world</mystr>
  </key2>
+ <key1>value of type string</key1>
 </docroot>
 ```
 
 #### TODO
-* Formatting for dates
-* Custom tag names for scalar types
-* Attributes?
+* More default converters
+* Attributes
+* Namespaces

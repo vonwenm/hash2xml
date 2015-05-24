@@ -119,6 +119,7 @@ func TestCustomConverter(t *testing.T) {
 	}
 
 	var b bytes.Buffer
+	// create a new serializer with a reference to a byte buffer
 	serializer := hash2xml.NewSerializer(&b, " ", true)
 
 	// add a custom converter for myType
@@ -140,10 +141,12 @@ func TestCustomConverter(t *testing.T) {
 			s.Newline()
 			return true, err
 		default:
+			// return false to indicate that other converters must handle it
 			return false, nil
 		}
 	})
 
+	// encode the hash
 	err := serializer.Encode("docroot", hash)
 	if err != nil {
 		t.Fatalf("XML encoder error encountered: %#v", err)
