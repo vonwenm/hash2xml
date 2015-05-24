@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
-	"time"
+	"strings"
 )
 
 var (
@@ -21,23 +21,21 @@ type Printer struct {
 	depth  int
 }
 
+// Converter is a function  in the xml conversion pipeline that converts an
+// object into xml  by writing it to the serializer
+type Converter func(*Serializer, interface{}, string, ...string) (bool, error)
+
 // Serializer is resposible for converting a hash to XML
 type Serializer struct {
 	Printer
+	converters []Converter
 }
 
 // ToXML is a factory/helper method that converts a map to an XML document
 func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 	var b bytes.Buffer
 
-	serializer := Serializer{
-		Printer: Printer{
-			Writer: bufio.NewWriter(&b),
-			Spacer: " ",
-			Pretty: true,
-		},
-	}
-
+	serializer := NewSerializer(&b, " ", true)
 	err := serializer.Encode(rootName, hash)
 	if err != nil {
 		return nil, err
@@ -46,95 +44,69 @@ func ToXML(rootName string, hash map[string]interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+// NewSerializer instantiates a serializer with all fields set
+func NewSerializer(b *bytes.Buffer, spacer string, pretty bool) Serializer {
+
+	// default converters
+	array := []Converter{
+		hashConverter,
+		arrayConverter,
+		scalarConverter,
+		timeConverter,
+	}
+
+	// instantiate the Serializer
+	return Serializer{
+		converters: array,
+		Printer: Printer{
+			Writer: bufio.NewWriter(b),
+			Spacer: spacer,
+			Pretty: pretty,
+		},
+	}
+}
+
+// AddConverter adds a new conversion function for the xml conversion pipeline
+func (s *Serializer) AddConverter(c Converter) {
+	s.converters = append(s.converters, c)
+}
+
 // Encode is resposible for doing the actual work of writing
 // a hash as xml into a Writer
 func (s *Serializer) Encode(rootName string, hash map[string]interface{}) error {
 	s.WriteString(header)
-	s.encodeHash(hash, rootName)
-	err := s.Flush()
+	err := s.Convert(hash, "", rootName)
+	if err != nil {
+		log.Printf("Hash2XML conversion error: %#v", err)
+		return err
+	}
 
-	return err
+	return s.Flush()
 }
 
-// encodeHash recurses a hash and converts key/values into XML
-func (s *Serializer) encodeScalar(value interface{}, key ...string) {
-	var defaultKey string
-
+// Convert is delegating enttries of a hash to the correct encoding method
+func (s *Serializer) Convert(raw interface{}, p string, key ...string) error {
+	// update the path
+	path := p
 	if len(key) > 0 {
-		s.writeStartTag(key[0])
-	} else {
-		defaultKey = s.getDefaultKey(value)
-		s.writeStartTag(defaultKey)
+		path = fmt.Sprintf("%s/%s", p, key[0])
 	}
 
-	s.writeScalar(value)
-
-	if len(key) > 0 {
-		s.writeEndTag(key[0])
-	} else {
-		s.writeEndTag(defaultKey)
-	}
-}
-
-// encodeHash recurses a hash and converts key/values into XML
-func (s *Serializer) encodeHash(hash map[string]interface{}, key ...string) {
-	if len(key) > 0 {
-		s.writeStartTag(key[0])
-		s.newline()
-		s.indent()
+	// look for a suitable converter
+	for _, c := range s.converters {
+		found, err := c(s, raw, path, key...)
+		if err != nil {
+			return err
+		}
+		// stop looking if a converter was found
+		if found {
+			return nil
+		}
 	}
 
-	// recursively serialize the hash
-	for k, v := range hash {
-		s.recurse(v, k)
-	}
-
-	if len(key) > 0 {
-		s.dedent()
-		s.writeIndentation()
-		s.writeEndTag(key[0])
-	}
-}
-
-// encodeHash recurses a hash and converts key/values into XML
-func (s *Serializer) encodeArray(array []interface{}, key ...string) {
-	if len(key) > 0 {
-		s.writeStartTag(key[0])
-		s.newline()
-		s.indent()
-	}
-
-	// iterate the array and serialize all the values
-	for _, value := range array {
-		s.recurse(value)
-	}
-
-	if len(key) > 0 {
-		s.dedent()
-		s.writeIndentation()
-		s.writeEndTag(key[0])
-	}
-}
-
-// recurse is delegating enttries of a hash to the correct encoding method
-func (s *Serializer) recurse(raw interface{}, key ...string) {
-	switch v := raw.(type) {
-
-	// map
-	case map[string]interface{}:
-		s.encodeHash(v, key...)
-
-	// arrays
-	case []interface{}:
-		s.encodeArray(v, key...)
-
-	// scalar
-	case string, float64, bool, int, int32, int64, float32, time.Time:
-		s.encodeScalar(v, key...)
-
-	default:
-		log.Printf("XML serializer not supporting type %#v", v)
-	}
+	t := reflect.TypeOf(raw)
+	log.Printf("Please add your own hash2xml.Converter that accepts type %s", t)
+	return fmt.Errorf("Error: XML serializer did not find a converter for type: %v", t)
 }
 
 func (s *Serializer) getDefaultKey(value interface{}) string {
@@ -143,18 +115,18 @@ func (s *Serializer) getDefaultKey(value interface{}) string {
 
 // vvvvvvv Printer methods vvvvvvv
 
-// indent increases current depth
-func (p *Printer) indent() {
+// Indent increases current depth
+func (p *Printer) Indent() {
 	p.depth++
 }
 
-// dedent decreases current depth
-func (p *Printer) dedent() {
+// Dedent decreases current depth
+func (p *Printer) Dedent() {
 	p.depth--
 }
 
-// writeIndentation prints the current depth of spaces
-func (p *Printer) writeIndentation() {
+// WriteIndentation prints the current depth of spaces
+func (p *Printer) WriteIndentation() {
 	if p.Pretty && p.depth > 0 {
 		for i := 0; i < p.depth; i++ {
 			p.WriteString(p.Spacer)
@@ -162,30 +134,46 @@ func (p *Printer) writeIndentation() {
 	}
 }
 
-// newLine does indeed print a newline character
-func (p *Printer) newline() {
+// GetIndentation returns the current indentation as a string
+func (p *Printer) GetIndentation() string {
+	if p.Pretty && p.depth > 0 {
+		return strings.Repeat(p.Spacer, p.depth)
+	}
+	return ""
+}
+
+// Newline does indeed print a newline character
+func (p *Printer) Newline() {
 	if p.Pretty {
 		p.WriteByte('\n')
 	}
 }
 
-// writeStartTag creates an start tag
-func (p *Printer) writeStartTag(name string) {
-	p.writeIndentation()
+// WriteStartTag creates an start tag
+func (p *Printer) WriteStartTag(name string, attributes ...string) {
+	p.WriteIndentation()
 	p.WriteByte('<')
 	p.WriteString(name)
+
+	// write some optional attributes
+	for _, attr := range attributes {
+		p.WriteByte(' ')
+		p.WriteString(attr)
+	}
+
+	// close the tag
 	p.WriteByte('>')
 }
 
-// writeEndTag creates an start tag
-func (p *Printer) writeEndTag(name string) {
+// WriteEndTag creates an start tag
+func (p *Printer) WriteEndTag(name string) {
 	p.WriteString("</")
 	p.WriteString(name)
 	p.WriteByte('>')
-	p.newline()
+	p.Newline()
 }
 
-// writeScalar creates an start tag
-func (p *Printer) writeScalar(raw interface{}) {
+// WriteScalar creates an start tag
+func (p *Printer) WriteScalar(raw interface{}) {
 	p.WriteString(fmt.Sprintf("%v", raw))
 }
